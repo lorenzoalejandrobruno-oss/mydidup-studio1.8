@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; style-src * 'unsafe-inline';">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="didUP Famiglia">
+    <meta name="theme-color" content="#2b4c7e">
+    <link rel="manifest" href="manifest.json?v=2">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2940/2940654.png?v=2"> <!-- Zaino -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2940/2940654.png?v=2"> <!-- Zaino -->
+    <title>didUP Portale Famiglia - NextGen Desktop</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<div class="sidebar-toggle" id="sidebar-toggle-btn" title="Apri Menu">☰</div>
+
+<div class="desktop-layout">
+    <aside class="sidebar">
+        <div class="sidebar-brand" style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+            <div style="font-size:24px; font-weight:900; color:var(--argo-blue-text);">didUP</div>
+            <div class="brand-sub">NEXTGEN • FAMIGLIA</div>
+        </div>
+        
+        <div class="sidebar-section">
+            <h4 class="sidebar-section-title">Anno di Corso (TrED)</h4>
+            <div class="segmented-control-row tred-selector btn-accent" id="tred-year-selector" style="background:none;">
+                <button class="segment-btn active" onclick="setTredYear(1)">1</button>
+                <button class="segment-btn" onclick="setTredYear(2)">2</button>
+                <button class="segment-btn" onclick="setTredYear(3)">3</button>
+                <button class="segment-btn" onclick="setTredYear(4)">4</button>
+            </div>
+        </div>
+
+        <!-- HUB OBIETTIVI SPOSTATO NELLA SIDEBAR -->
+        <div class="sidebar-section">
+            <h4 class="sidebar-section-title">🎯 Obiettivo Media</h4>
+            <div class="sidebar-target-box card" style="padding:15px;">
+                <div class="target-input-group">
+                    <input type="number" id="target-avg-input" placeholder="Inserisci qui il tuo obiettivo (es: 7.0)" step="0.1" min="1" max="10" oninput="recalculateDesktopSystem()" style="width:100%; padding:8px; font-weight:800; border-radius:8px; border:1px solid var(--border-color);">
+                </div>
+                <div id="target-analysis-hook" class="target-advice-list"></div>
+            </div>
+        </div>
+
+        <!-- Box per Login -->
+        <div id="auth-box" class="auth-card" style="display: none;">
+            <p>Sincronizza i tuoi dati tra più dispositivi.</p>
+            <button class="btn-accent" style="width: 100%; font-size: 11px;" onclick="handleAuth()">Accedi con Google</button>
+        </div>
+        <div id="user-profile-box" class="user-profile-summary" onclick="openModal('user-settings-modal')" style="cursor:pointer; display:none;" title="Clicca per personalizzare">
+            <div class="avatar-circle" id="user-avatar">🎒</div>
+            <div class="user-info">
+                <p class="u-name" id="display-name">Caricamento...</p>
+                <p class="u-class" id="display-class">...</p>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="live-sync-indicator" style="margin-bottom: 15px; padding: 12px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 10px;">
+                <div class="pulse-dot"></div>
+                <span id="live-timestamp-desktop" style="font-size: 10px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px;">Inizializzazione...</span>
+            </div>
+            <div class="menu-item" onclick="toggleTheme()" style="margin-bottom: 15px; padding: 12px; background: rgba(0,0,0,0.03); border-radius:15px;">
+                <span id="theme-toggle-icon">🌙</span>
+                <span id="theme-toggle-text" style="font-weight:700;">Tema Notte</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <section id="tab-home" class="desktop-tab-page active">
+            <div class="page-header">
+                <div class="header-flex-container">
+                    <div class="header-titles">
+                        <h4 style="font-size: 24px; color: var(--primary-orange); font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">Bentornato, <span id="display-name-welcome">Studente</span></h4>
+                        <p id="home-subtitle-display"></p>
+                    </div>
+                    <div style="display:flex; gap:12px; align-items: center;">
+                        <button class="btn-accent" onclick="showInstallInstructions()" style="background: var(--argo-teal); color: white; display: flex; align-items: center; gap: 8px; padding: 8px 16px;">
+                            <span style="font-size: 14px;">📲</span>
+                            <span style="font-size: 10px; font-weight: 700;">INSTALLA APP</span>
+                        </button>
+                        <button class="btn-accent" onclick="window.clearLocalCache()" title="Svuota cache" style="background: #fee2e2; color: #ef4444; padding: 8px 16px;">
+                            <span>🔄</span> <span style="font-size: 10px; font-weight: 700;">RESET</span>
+                        </button>
+                        <button class="btn-accent" onclick="refreshApp()" title="Ricarica sito" style="background: #E5E5EA; color: var(--text-main); padding: 8px 16px;">
+                            <span id="refresh-icon">🔃</span> <span style="font-size: 10px; font-weight: 700;">REFRESH</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AZIONI RAPIDE INTUITIVE -->
+            <div class="quick-actions-bar margin-top-20">
+                <div class="quick-action-item" onclick="openModal('homework-modal')">
+                    <div class="qa-icon bg-blue">📝</div>
+                    <span>Nuovo Compito</span>
+                </div>
+                <div class="quick-action-item" onclick="openOfficialGrade()">
+                    <div class="qa-icon bg-teal">＋</div>
+                    <span>Inserisci Voto</span>
+                </div>
+                <div class="quick-action-item" onclick="openTargetAnalysisModal()">
+                    <div class="qa-icon bg-gold">🎯</div>
+                    <span>Analisi Obiettivo</span>
+                </div>
+                <div class="quick-action-item" onclick="openModal('attendance-modal')">
+                    <div class="qa-icon bg-red">🎒</div>
+                    <span>Assenza</span>
+                </div>
+                <div class="quick-action-item" onclick="switchDesktopTab('condivisione')">
+                    <div class="qa-icon bg-purple">📂</div>
+                    <span>File Materie</span>
+                </div>
+            </div>
+
+            <div class="stats-top-row">
+                <div class="card combined-stats-card">
+                    <div class="card-header-section" style="justify-content:center;">
+                        <div class="radial-progress-container">
+                            <div class="circle-progress-desktop">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="circle-bg" cx="50" cy="50" r="45"></circle>
+                                    <circle class="circle-fg" id="avg-circle-stroke" cx="50" cy="50" r="45"></circle>
+                                </svg>
+                                <div class="circle-inner-value">
+                                    <span id="global-average-display">N.D.</span>
+                                    <span id="predicted-avg-display">Prev: --</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="average-info-section">
+                            <h3>Media Generale</h3>
+                            <p class="stats-subtext">Il tuo andamento complessivo</p>
+                            <div id="home-averages-period-breakdown"></div>
+                            <button class="btn-accent" onclick="openTargetSidebar(event)" style="margin-top:10px; padding:6px 12px; font-size:10px; font-weight:700;">🎯 ANALISI OBIETTIVO</button>
+                        </div>
+                    </div>
+
+                    <hr class="card-divider">
+
+                    <div class="attendance-summary-section">
+                        <h3 style="font-size:12px; color:var(--text-sub);">STATISTICHE RAPIDE</h3>
+                        <div class="mini-stats-inline-row">
+                            <div class="mini-stat-info"><h5>Assenze</h5><p id="stat-assenze" style="font-weight:800;">0</p></div>
+                            <div class="mini-stat-info divider"><h5>Ritardi</h5><p id="stat-ritardi" style="font-weight:800;">0</p></div>
+                            <div class="mini-stat-info"><h5>Uscite</h5><p id="stat-uscite">0</p></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card text-center">
+                    <h3 style="font-size:16px; margin-bottom:15px; font-weight:800;">Rapporto Presenze</h3>
+                    <div class="pie-chart-container">
+                        <div id="attendance-pie-chart" class="pie-chart"></div>
+                        <div class="pie-legend">
+                            <div class="legend-item"><span class="dot g-green"></span> Presenze (<span id="perc-presenze">0</span>%)</div>
+                            <div class="legend-item"><span class="dot g-red"></span> Assenze (<span id="perc-assenze">0</span>%)</div>
+                        </div>
+                    </div>
+                    <p class="stats-subtext margin-top-10">Totale ore assenza: <b id="total-hours-abs" style="font-weight:800;">0</b>h / 1236h</p>
+                </div>
+            </div>
+            <div class="dashboard-grid">
+                <div class="home-scroll-wrapper">
+                    <!-- ORARIO DI OGGI -->
+                    <section id="home-today-timetable-section">
+                        <div class="scroll-section-header">
+                            <div class="header-icon i-teal">📅</div>
+                            <h3>Orario di Oggi</h3>
+                        </div>
+                        <div id="home-today-timetable-hook" class="horizontal-scroll-container"></div>
+                    </section>
+
+                    <!-- OBIETTIVI SETTIMANALI HOME -->
+                    <section id="weekly-goals-section">
+                        <div class="scroll-section-header">
+                            <div class="header-icon i-blue">🎯</div>
+                            <h3>Obiettivi Settimanali</h3>
+                        </div> 
+                        <div id="weekly-goals-hook"></div>
+                    </section>
+
+                    <!-- SMART STUDY ADVISOR HOME -->
+                    <section id="study-advisor-home-container">
+                        <div class="scroll-section-header">
+                            <div class="header-icon i-purple">🧠</div>
+                            <h3>Consigli di Studio Intelligenti</h3>
+                        </div>
+                        <div id="study-plan-hook-home"></div>
+                    </section>
+
+                    <section>
+                        <div class="scroll-section-header"><div class="header-icon i-red">🚩</div><h3>Da Giustificare</h3></div>
+                        <div class="horizontal-scroll-container" id="home-justifications-scroll"></div>
+                    </section>
+                    <section>
+                        <div class="scroll-section-header"><div class="header-icon i-blue">📝</div><h3>Prossimi Compiti</h3></div>
+                        <div class="horizontal-scroll-container" id="home-homework-scroll"></div>
+                    </section>
+                    <section>
+                        <div class="scroll-section-header"><div class="header-icon i-teal">🗓️</div><h3>Eventi & Circolari</h3></div>
+                        <div class="horizontal-scroll-container" id="home-events-scroll"></div>
+                    </section>
+                    <section>
+                        <div class="scroll-section-header"><div class="header-icon i-gold">🌟</div><h3>Ultimi Voti</h3></div>
+                        <div class="horizontal-scroll-container" id="home-grades-scroll"></div>
+                    </section>
+                    <section>
+                        <div class="scroll-section-header"><div class="header-icon i-purple">🔔</div><h3>Promemoria Verifiche</h3></div>
+                        <div class="horizontal-scroll-container" id="home-reminders-scroll"></div>
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-diario" class="desktop-tab-page">
+            <div class="page-header flex-row-justify">
+                <div>
+                    <h2>Diario & Planning Scolastico</h2>
+                    <p>Visualizzazione e pianificazione delle scadenze dei compiti.</p>
+                </div>
+                <button class="btn-primary" onclick="openModal('homework-modal')">＋ Nuovo Compito Assegnato</button>
+            </div>
+
+            <!-- SMART STUDY ADVISOR DIARIO -->
+            <div id="study-plan-hook-diario" class="margin-top-20"></div>
+
+            <!-- Calendario Settimanale Orizzontale con Navigazione -->
+            <div class="calendar-section-container margin-top-20">
+                <div class="calendar-nav-header">
+                    <h3 id="calendar-month-year-label">Settimana Corrente</h3>
+                    <div class="calendar-nav-controls">
+                        <button class="cal-nav-btn" onclick="moveWeek(-1)" title="Settimana Precedente">❮</button>
+                        <button class="cal-nav-btn" onclick="moveWeek(1)" title="Settimana Successiva">❯</button>
+                    </div>
+                </div>
+                <div id="weekly-calendar-hook" class="horizontal-scroll-container calendar-strip"></div>
+            </div>
+
+            <div class="segmented-control-row margin-top-15">
+                <button class="segment-btn active" id="view-giorno" onclick="setDiarioView('giorno')">GIORNO</button>
+                <button class="segment-btn" id="view-settimana" onclick="setDiarioView('settimana')">SETTIMANA</button>
+                <button class="segment-btn" id="view-mese" onclick="setDiarioView('mese')">MESE</button>
+            </div>
+            <div class="premium-card margin-top-20">
+                <div class="card-subheader-context">
+                    <h4 id="diario-title-label">Attività ed Esercizi Ordinati</h4>
+                    <span class="badge-count" id="homework-counter-badge">0 Compiti</span>
+                </div>
+                <div class="diario-grid-container margin-top-15" id="diario-cards-hook"></div>
+            </div>
+        </section>
+
+        <section id="tab-voti" class="desktop-tab-page">
+            <div class="page-header flex-row-justify">
+                <div>
+                    <h2>Registro delle Valutazioni</h2>
+                    <p>Analisi delle prove scritte, orali e pratiche divise per periodo.</p>
+                </div>
+                <button class="btn-primary teal-btn" onclick="launchSubjectModal()">＋ Aggiungi Nuova Materia</button>
+                <button class="btn-primary" onclick="openModal('pdf-import-modal')" style="background-color:#0ea5e9;margin-left:10px;">📄 Importa da PDF</button>
+                <button class="btn-primary" onclick="downloadPDFReport()" style="background-color:#e11d48;margin-left:10px;">📊 Scarica Report PDF</button>
+            </div>
+            <div class="flex-row-justify margin-top-15">
+                <div class="segmented-control-row">
+                    <button class="segment-btn" id="btn-p-primo" onclick="filterPeriod('primo')">1° QUADRIMESTRE</button>
+                    <button class="segment-btn" id="btn-p-secondo" onclick="filterPeriod('secondo')">2° QUADRIMESTRE</button>
+                    <button class="segment-btn active" id="btn-p-intero" onclick="filterPeriod('intero')">INTERO ANNO</button>
+                </div>
+            </div>
+            <div id="tab-voti-header-info" class="margin-top-20"></div>
+            <div class="premium-card margin-top-20">
+                <div class="chart-header-container">
+                    <div>
+                        <h3>Andamento Analitico delle Valutazioni</h3>
+                        <p class="stats-subtext">Grafico delle medie mensili ponderate</p>
+                    </div>
+                    <div class="live-average-banner" id="voti-period-average-badge">Media Periodo: N.D.</div>
+                </div>
+                <div class="chart-box-wrapper margin-top-15" style="height: 220px; position: relative;">
+                    <canvas id="main-grades-chart"></canvas>
+                </div>
+            </div>
+            <div class="margin-top-20" id="desktop-subjects-accordion-container"></div>
+        </section>
+
+        <section id="tab-orario" class="desktop-tab-page">
+            <div class="page-header flex-row-justify">
+                <div>
+                    <h2>Orario Scolastico Settimanale</h2>
+                    <p>Visualizza e gestisci la tua tabella delle lezioni settimanali.</p>
+                </div>
+                <button class="btn-primary" onclick="downloadTimetablePDF()" style="background-color:#e11d48;">📊 Scarica Orario PDF</button>
+            </div>
+            <div class="premium-card">
+                <div class="timetable-container" id="timetable-grid-hook"></div>
+            </div>
+        </section>
+
+        <section id="tab-scrutinio" class="desktop-tab-page">
+            <div class="page-header">
+                <h2>Esiti Scrutinio & Tabellone Finale</h2>
+                <p>Quadro dei voti formali scrutinati dal Consiglio di Classe con conteggio ore assenza.</p>
+            </div>
+            <div class="scrutinio-layout-split margin-top-20">
+                <div class="scrutinio-sidebar-menu">
+                    <div class="scrutinio-nav-block active" id="scrut-menu-primo" onclick="switchScrutinioPeriod('primo')">
+                        <h5>Primo Quadrimestre</h5><p>Valutazioni intermedie</p>
+                    </div>
+                    <div class="scrutinio-nav-block" id="scrut-menu-secondo" onclick="switchScrutinioPeriod('secondo')">
+                        <h5>Scrutinio Finale</h5><p>Esiti di fine anno scolastico</p>
+                    </div>
+                </div>
+                <div class="premium-card table-card-holder">
+                    <h3 id="scrutinio-table-title">Quadro Informativo Valutazioni</h3>
+                    <div class="scrutinio-table-responsive margin-top-15">
+                        <table class="scrutinio-premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Insegnamento / Disciplina</th>
+                                    <th class="text-center">Ore Assenza</th>
+                                    <th class="text-center">Voto Scrutinio</th>
+                                    <th class="text-right">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scrutinio-tbody-hook"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- NUOVO GRAFICO STORICO STUDIO -->
+                <div class="premium-card margin-top-20 grid-col-span-full">
+                    <h3>Produttività Studio (Ultimi 7 Giorni)</h3>
+                    <p class="stats-subtext">Monitoraggio dei task completati tramite l'Assistente di Studio</p>
+                    <div style="height: 200px; position: relative; margin-top: 15px;">
+                        <canvas id="study-history-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-promemoria" class="desktop-tab-page">
+            <div class="page-header flex-row-justify">
+                <div>
+                    <h2>Promemoria Verifiche & Interrogazioni</h2>
+                    <p>Gestisci le date delle prove programmate per non farti cogliere impreparato.</p>
+                </div>
+                <button class="btn-primary teal-btn" onclick="openModal('reminder-modal')">＋ Nuovo Promemoria</button>
+            </div>
+            <div class="premium-card margin-top-20">
+                <div class="card-subheader-context"><h4>Prove e Verifiche in Programma</h4></div>
+                <div id="reminders-cards-hook" class="diario-grid-container margin-top-15"></div>
+            </div>
+        </section>
+
+        <section id="tab-eventi" class="desktop-tab-page">
+            <div class="page-header flex-row-justify">
+                <div>
+                    <h2>Gestione Comunicazioni & Eventi</h2>
+                    <p>Visualizza e gestisci le circolari d'istituto e gli eventi scolastici.</p>
+                </div>
+                <button class="btn-primary teal-btn" onclick="openModal('event-modal')">＋ Nuova Comunicazione</button>
+            </div>
+            <div class="premium-card margin-top-20">
+                <div class="card-subheader-context"><h4>Archivio Circolari ed Eventi</h4></div>
+                <div id="events-management-hook" class="diario-grid-container margin-top-15"></div>
+            </div>
+        </section>
+
+        <section id="tab-appello" class="desktop-tab-page">
+            <div class="page-header flex-row-justify">
+                <div>
+                    <h2>Eventi Appello & Presenze</h2>
+                    <p>Registro dettagliato di assenze, ritardi ed uscite anticipate.</p>
+                </div>
+                <button class="btn-primary" onclick="openModal('attendance-modal')">＋ Registra Evento Appello</button>
+            </div>
+            <div class="premium-card margin-top-20">
+                <div class="card-subheader-context"><h4>Elenco Eventi Registrati</h4></div>
+                <div id="attendance-list-hook" class="diario-grid-container margin-top-15"></div>
+            </div>
+        </section>
+
+        <section id="tab-condivisione" class="desktop-tab-page">
+            <div class="page-header">
+                <h2>Condivisione Materiali</h2>
+                <p>Gestisci i documenti e i materiali didattici inviati dai docenti per ogni materia.</p>
+            </div>
+            <div id="condivisione-list-hook"></div>
+        </section>
+
+    </main>
+</div>
+
+<nav class="bottom-nav">
+    <div class="nav-btn active" id="btn-nav-home" onclick="switchDesktopTab('home')">
+        <span class="nav-btn-icon"></span><span>Home</span>
+    </div>
+    <div class="nav-btn" id="btn-nav-diario" onclick="switchDesktopTab('diario')">
+        <span class="nav-btn-icon"></span><span>Diario</span>
+    </div>
+    <div class="nav-btn" id="btn-nav-voti" onclick="switchDesktopTab('voti')">
+        <span class="nav-btn-icon"></span><span>Voti</span>
+    </div>
+    <div class="nav-btn" id="btn-nav-menu" onclick="toggleFullMenu()">
+        <span class="nav-btn-icon"></span><span>Menu</span>
+    </div>
+</nav>
+
+<div id="menu-overlay" class="menu-overlay">
+    <div class="menu-header-full">
+        <h2>Menu Principale</h2>
+        <button class="close-btn" style="font-size: 30px;" onclick="toggleFullMenu()">×</button>
+    </div>
+    <div class="menu-grid">
+        <div class="menu-item" onclick="switchDesktopTab('voti')"><span class="menu-emoji">📊</span><span>Voti</span></div>
+        <div class="menu-item" onclick="switchDesktopTab('diario')"><span class="menu-emoji">📝</span><span>Diario</span></div>
+        <div class="menu-item" onclick="switchDesktopTab('scrutinio')"><span class="menu-emoji">🎓</span><span>Scrutinio</span></div>
+        <div class="menu-item" onclick="switchDesktopTab('eventi')"><span class="menu-emoji">📢</span><span>Comunicazioni</span></div>
+        <div class="menu-item" onclick="switchDesktopTab('promemoria')"><span class="menu-emoji">🔔</span><span>Prove</span></div>
+        <div class="menu-item" onclick="switchDesktopTab('appello')"><span class="menu-emoji">🎒</span><span>Appello</span></div>
+        <div class="menu-item" onclick="switchDesktopTab('orario')"><span class="menu-emoji">📅</span><span>Orario</span></div>
+        <div class="menu-item" onclick="openModal('vacations-modal')"><span class="menu-emoji">🏖️</span><span>Vacanze</span></div>
+        <div class="menu-item" onclick="openTargetAnalysisModal()"><span class="menu-emoji">🎯</span><span>Analisi Obiettivo</span></div>
+        <div class="menu-item" onclick="switchDesktopTab('condivisione')"><span class="menu-emoji">📂</span><span>Condivisione</span></div>
+        <div class="menu-item" onclick="exportDatabase()"><span class="menu-emoji">📤</span><span>Esporta</span></div>
+        <div class="menu-item" onclick="document.getElementById('import-db-input').click()"><span class="menu-emoji">📥</span><span>Importa</span></div>
+        <div class="menu-item" onclick="resetToDefaultSubjects()"><span class="menu-emoji">🔄</span><span style="color:#ef4444;">Reset</span></div>
+    </div>
+</div>
+<input type="file" id="import-db-input" style="display:none" accept=".json" onchange="importDatabase(event)">
+
+<div id="homework-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+            <h3>Pianifica Nuovo Compito</h3>
+            <button class="close-btn" aria-label="Chiudi" onclick="closeModal('homework-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Descrizione Attività Assegnata</label>
+                <input type="text" id="hw-title" placeholder="Es: Studiare pag. 120-135 ed effettuare esercizi">
+            </div>
+            <div class="form-group">
+                <label>Materia di Riferimento</label>
+                <select id="hw-subject-select"></select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Data Scadenza</label>
+                    <input type="date" id="hw-date">
+                </div>
+                <div class="form-group">
+                    <label>Priorità</label>
+                    <select id="hw-priority">
+                        <option value="Bassa">🟢 Bassa Priorità</option>
+                        <option value="Media" selected>🟡 Media</option>
+                        <option value="Alta">🔴 Alta</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('homework-modal')">Annulla</button>
+            <button class="btn-primary" onclick="commitHomework()">Salva nel Diario</button>
+        </div>
+    </div>
+</div>
+
+<div id="timetable-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+            <h3>Imposta Lezione</h3>
+            <button class="close-btn" aria-label="Chiudi" onclick="closeModal('timetable-modal')">×</button>
+        </div>
+        <input type="hidden" id="tt-day-idx">
+        <input type="hidden" id="tt-hour-idx">
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Materia</label>
+                <select id="tt-subject-select"></select>
+            </div>
+            <div class="form-group">
+                <label>Docente / Professore</label>
+                <input type="text" id="tt-teacher" placeholder="Es: Prof. Rossi">
+            </div>
+            <div class="form-group">
+                <label>Aula / Note</label>
+                <input type="text" id="tt-room" placeholder="Es: Aula 3, Lab Info...">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="clearTimetableCell()">Rimuovi</button>
+            <button class="btn-primary teal-btn" onclick="saveTimetableCell()">Salva Lezione</button>
+        </div>
+    </div>
+</div>
+
+<div id="reminder-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+            <h3>Nuovo Promemoria Prova</h3>
+            <button class="close-btn" aria-label="Chiudi" onclick="closeModal('reminder-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Argomento della Prova</label>
+                <input type="text" id="rem-title" placeholder="Es: Interrogazione su Dante o Verifica di Matematica">
+            </div>
+            <div class="form-group">
+                <label>Materia</label>
+                <select id="rem-subject-select"></select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="rem-date">
+                </div>
+                <div class="form-group">
+                    <label>Tipo di Prova</label>
+                    <select id="rem-type">
+                        <option value="Verifica">Verifica Scritta</option>
+                        <option value="Interrogazione">Interrogazione Orale</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('reminder-modal')">Annulla</button>
+            <button class="btn-primary teal-btn" onclick="commitReminder()">Aggiungi Promemoria</button>
+        </div>
+    </div>
+</div>
+
+<div id="event-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+            <h3>Crea Nuova Comunicazione</h3>
+            <button class="close-btn" aria-label="Chiudi" onclick="closeModal('event-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Oggetto della Comunicazione</label>
+                <input type="text" id="event-title" placeholder="Es: Assemblea d'Istituto o Circolare n. 145">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Data Evento</label>
+                    <input type="date" id="event-date">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="event-category">
+                        <option value="Circolare">📄 Circolare</option>
+                        <option value="Evento">📅 Evento Scolastico</option>
+                        <option value="Avviso">⚠️ Avviso Urgente</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('event-modal')">Annulla</button>
+            <button class="btn-primary teal-btn" onclick="commitEvent()">Pubblica Comunicazione</button>
+        </div>
+    </div>
+</div>
+
+<div id="subject-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+            <h3 id="subject-modal-title">Nuova Disciplina Scolastica</h3>
+            <button class="close-btn" aria-label="Chiudi" onclick="closeModal('subject-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Nome Insegnamento</label>
+                <input type="text" id="subject-name" placeholder="Es: Matematica Applicata, Fisica...">
+            </div>
+            <div class="form-group">
+                <label>Obiettivo Media (Target Materia)</label>
+                <input type="number" id="subject-target" placeholder="Es: 7.5" step="0.1" min="1" max="10">
+            </div>
+            <div class="form-group">
+                <label>Colore Identificativo</label>
+                <input type="color" id="subject-color" value="#59beba" style="height: 40px; border: none; padding: 0; width: 100%; border-radius: 6px;">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('subject-modal')">Annulla</button>
+            <button class="btn-primary teal-btn" id="btn-save-subject" onclick="saveSubject()">Registra Materia</button>
+        </div>
+    </div>
+</div>
+
+    <div id="pdf-import-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3>Importa Valutazioni da PDF</h3>
+                <button class="close-btn" onclick="closeModal('pdf-import-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 15px;">
+                    Seleziona il PDF scaricato dal registro elettronico. Il sistema proverà ad estrarre automaticamente materie, voti e date.
+                </p>
+                <div class="form-group">
+                    <label>Seleziona File PDF</label>
+                    <input type="file" id="pdf-file-input" accept="application/pdf">
+                </div>
+                <div id="pdf-loading-spinner" class="loading-spinner" style="display: none;"></div>
+                <div id="pdf-import-status" style="font-size: 11px; margin-top: 10px; font-weight: 600;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('pdf-import-modal')">Annulla</button>
+                <button class="btn-primary" id="btn-start-pdf-import" onclick="handlePDFImport()">
+                    Avvia Importazione
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="grade-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3 id="grade-modal-title">Registra Valutazione</h3>
+                <button class="close-btn" onclick="closeModal('grade-modal')">×</button>
+            </div>
+            <input type="hidden" id="current-subject-id">
+            <input type="hidden" id="is-simulation-flag" value="false">
+            <div class="modal-body">
+                <div class="form-group" id="grade-subject-group" style="display:none;">
+                    <label>Seleziona Materia</label>
+                    <select id="grade-subject-select"></select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                    <label id="grade-label" style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Valutazione</label>
+                        <div style="display: flex; align-items: center; gap: 10px;" id="grade-input-wrapper">
+                            <input type="number" id="grade-value" min="1" max="10" step="0.05" placeholder="Es: 7.15" style="font-size:16px !important;">
+                            <button type="button" class="btn-accent" style="padding: 8px 12px; border-radius: 10px; font-size: 11px;" onclick="toggleQuickGrades()">＋ Voti</button>
+                            <select id="grade-annotation-select" style="display:none; width:100%; padding:10px; border:1px solid #cbd5e0; border-radius:6px; font-size:16px !important;">
+                                    <option value="Ottimo">Ottimo</option>
+                                    <option value="Distinto">Distinto</option>
+                                    <option value="Molto">Molto</option>
+                                    <option value="Buono">Buono</option>
+                                    <option value="Discreto">Discreto</option>
+                                    <option value="Sufficiente">Sufficiente</option>
+                                    <option value="Insufficiente">Insufficiente</option>
+                                    <option value="Mediocre">Mediocre</option>
+                                </optgroup>
+                            </select> 
+                            <div id="grade-graphic-display" class="grade-bubble g-grey" style="flex-shrink: 0; display: none;">-</div>
+                        </div>
+                        <div id="quick-grade-container" style="display:none; margin-top: 15px; max-height: 250px; overflow-y: auto;" class="card">
+                            <div class="quick-grade-grid" id="quick-grade-grid"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipologia Prova</label>
+                        <select id="grade-type">
+                            <option value="Scritto">Scritto</option>
+                            <option value="Orale">Orale</option>
+                            <option value="Pratico">Pratico</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data Prova</label>
+                        <input type="date" id="grade-date">
+                    </div>
+                    <div class="form-group">
+                        <label>Mese</label>
+                        <select id="grade-month">
+                            <option value="9">Settembre</option><option value="10">Ottobre</option><option value="11">Novembre</option>
+                            <option value="12">Dicembre</option><option value="1">Gennaio</option><option value="2">Febbraio</option>
+                            <option value="3">Marzo</option><option value="4">Aprile</option><option value="5">Maggio</option><option value="6">Giugno</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Peso (%) per Media</label>
+                        <input type="number" id="grade-weight" value="100" min="0" max="200" step="10">
+                    </div>
+                    <div class="form-group">
+                        <label>Argomento della Verifica</label>
+                        <input type="text" id="grade-desc" placeholder="Es: Verifica sulle funzioni e limiti">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Commento Docente</label>
+                    <textarea id="grade-comment" style="width:100%; border-radius:6px; border:1px solid #cbd5e0; padding:10px; font-size:16px !important;" rows="2" placeholder="Note del professore sulla prova..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('grade-modal')">Chiudi</button>
+                <button class="btn-primary" id="btn-save-grade" onclick="saveGrade()">Salva nel Registro</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="user-settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3>Personalizza Profilo</h3>
+                <button class="close-btn" onclick="closeModal('user-settings-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome Studente</label>
+                    <input type="text" id="input-user-name" placeholder="Es: Lorenzo Alejandro">
+                </div> 
+                <div class="form-group">
+                    <label>Classe / Info</label>
+                    <input type="text" id="input-user-class" placeholder="Es: Classe 1 TrED • Registro Unificato">
+                </div>
+                <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--border-color);">
+                <h4 style="font-size: 12px; margin-bottom: 10px; color: var(--argo-blue-text);">Personalizzazione Navigazione</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Primo Pulsante</label>
+                        <select id="input-nav-1">
+                            <option value="home">Home</option>
+                            <option value="diario">Diario</option>
+                            <option value="voti">Voti</option>
+                            <option value="scrutinio">Scrutinio</option>
+                            <option value="eventi">Eventi</option>
+                            <option value="promemoria">Prove</option>
+                            <option value="appello">Appello</option>
+                            <option value="orario">Orario</option>
+                            <option value="condivisione">Files</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Secondo Pulsante</label>
+                        <select id="input-nav-2">
+                            <option value="diario">Diario</option>
+                            <option value="voti">Voti</option>
+                            <option value="scrutinio">Scrutinio</option>
+                            <option value="eventi">Eventi</option>
+                            <option value="promemoria">Prove</option>
+                            <option value="appello">Appello</option>
+                            <option value="orario">Orario</option>
+                            <option value="condivisione">Files</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Terzo Pulsante</label>
+                        <select id="input-nav-3">
+                            <option value="diario">Diario</option>
+                            <option value="voti">Voti</option>
+                            <option value="scrutinio">Scrutinio</option>
+                            <option value="eventi">Eventi</option>
+                            <option value="promemoria">Prove</option>
+                            <option value="appello">Appello</option>
+                            <option value="orario">Orario</option>
+                            <option value="condivisione">Files</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 5px;">
+                    <label style="display: flex; align-items: center; gap: 8px; text-transform: none; font-size: 13px; cursor: pointer;">
+                        <input type="checkbox" id="input-hide-nav-labels" style="width: auto; margin: 0;"> Nascondi etichette di testo (Minimal)
+                    </label>
+                </div>
+                <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--border-color);">
+                <h4 style="font-size: 12px; margin-bottom: 10px; color: var(--argo-blue-text);">Configurazione Periodi</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Inizio 1° Quadrimestre</label>
+                        <input type="date" id="term1-start">
+                    </div>
+                    <div class="form-group">
+                        <label>Fine 1° Quadrimestre</label>
+                        <input type="date" id="term1-end">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fine 2° Quadrimestre</label>
+                        <input type="date" id="term2-end">
+                    </div>
+                </div>
+                <div id="verification-section" style="margin-top: 15px; padding: 10px; background: #eff6ff; border-radius: 8px; display: none;">
+                    <p style="font-size: 11px; color: #1e40af; margin-bottom: 8px;">Il tuo indirizzo email non è verificato.</p>
+                    <button class="btn-primary" style="font-size: 10px; padding: 6px 12px;" onclick="sendVerificationEmail()">Invia Email di Verifica</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('user-settings-modal')">Annulla</button>
+                <button class="btn-cancel" id="btn-logout" style="background-color:#fee2e2; color:#ef4444; display:none;" onclick="logout()">Disconnetti</button>
+                <button class="btn-primary teal-btn" onclick="saveUserSettings()">Salva Profilo</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="subject-detail-modal" class="modal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div id="detail-sub-avatar" class="avatar-circle">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2940/2940654.png" alt="Zaino" style="width: 24px; height: 24px; filter: brightness(0) invert(1);">
+                    </div>
+                    <div class="detail-sub-name-wrapper">
+                        <h3 id="detail-sub-name-display">Materia</h3>
+                        <button class="edit-subject-btn" onclick="event.stopPropagation(); enableSubjectNameEdit(currentSubjectDetailId, 'detail-sub-name-display')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button class="close-btn" onclick="closeModal('subject-detail-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-averages-grid">
+                    <div class="detail-stat-box"><h6>SCRITTI</h6><p id="avg-scritti">-</p></div>
+                    <div class="detail-stat-box"><h6>ORALI</h6><p id="avg-orali">-</p></div> 
+                    <div class="detail-stat-box"><h6>PRATICI</h6><p id="avg-pratici">-</p></div>
+            </div> 
+
+                <div class="premium-card">
+                    <h4 style="font-size: 12px; margin-bottom: 10px;">Andamento Voti <span id="detail-subject-avg" style="margin-left:10px; color:var(--argo-teal); font-weight:800;"></span></h4>
+                    <div class="detail-chart-container" style="position: relative;">
+                        <canvas id="single-subject-chart-canvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="premium-card margin-top-20">
+                    <h4 style="font-size: 12px; margin-bottom: 10px;">Distribuzione Voti Materia</h4>
+                    <div class="detail-chart-container" style="height: 150px; position: relative;">
+                        <canvas id="subject-grade-distribution-chart-canvas"></canvas>
+                    </div>
+                </div>
+
+                <div id="prediction-info-box" class="predicted-row-box card" style="display: none;">
+                    <div>
+                        <div style="font-size: 10px; font-weight: 800; color: #3b82f6;">PREVISIONE ATTIVA</div>
+                        <div style="font-size: 11px; color: #1e40af;" id="pred-averages-text">Media Materia: -- | Media Generale: --</div>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 10px; background-color: #3b82f6;" onclick="convertPredictionToOfficial()">Registra Voto</button>
+                        <button class="btn-delete-task" onclick="clearSimulationFromDetail()">Rimuovi</button>
+                    </div>
+                </div>
+
+                <div class="margin-top-20">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;"> 
+                        <h4 style="font-size: 14px; color: var(--argo-blue-text);">Elenco Valutazioni</h4>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-primary" style="padding: 6px 14px; font-size: 11px;" onclick="openOfficialGrade()" title="Aggiungi voto reale">＋ Voto</button>
+                            <button class="btn-primary" style="padding: 6px 14px; font-size: 11px; background-color: #8b5cf6;" onclick="openAnnotationModal()" title="Aggiungi nota o giudizio">＋ Nota</button>
+                            <button class="btn-primary" style="padding: 6px 14px; font-size: 11px; background-color: #3b82f6;" onclick="promptPrediction()" title="Simula un voto">🔮 Simula</button>
+                        </div>
+                    </div>
+                    <div id="detail-grades-list" style="max-height: 200px; overflow-y: auto;"></div> 
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="scrutinio-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3>Modifica Esito Periodico</h3>
+                <button class="close-btn" onclick="closeModal('scrutinio-modal')">×</button>
+            </div>
+            <input type="hidden" id="scrutinio-edit-sub-id">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Insegnamento Selezionato</label>
+                    <input type="text" id="scrutinio-edit-sub-name" disabled class="disabled-input">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Voto Scrutinio (Intero)</label>
+                        <input type="number" id="scrutinio-input-voto" min="2" max="10" placeholder="Voto">
+                    </div>
+                    <div class="form-group">
+                        <label>Ore Assenza Accumulate</label>
+                        <input type="number" id="scrutinio-input-assenze" min="0" placeholder="Ore">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('scrutinio-modal')">Annulla</button>
+                <button class="btn-primary" onclick="saveScrutinioChanges()">Applica Valutazione</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="attendance-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3>Registra Evento Appello</h3>
+                <button class="close-btn" onclick="closeModal('attendance-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Tipo di Evento</label>
+                    <select id="att-type">
+                        <option value="Assenza">❌ Assenza</option>
+                        <option value="Ritardo">🕒 Ritardo</option>
+                        <option value="Uscita">🚪 Uscita Anticipata</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="att-date">
+                </div>
+                <div class="form-group">
+                    <label>Numero Ore di Assenza (Efetive)</label>
+                    <input type="number" id="att-hours" placeholder="Es: 1, 2, 6..." min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label>Motivazione / Nota</label>
+                    <input type="text" id="att-reason" placeholder="Es: Motivi di salute, treno in ritardo...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('attendance-modal')">Annulla</button>
+                <button class="btn-primary teal-btn" onclick="commitAttendance()">Registra</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="vacations-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3>Gestione Vacanze & Giorni Liberi</h3>
+                <button class="close-btn" onclick="closeModal('vacations-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 11px; color: #64748b; margin-bottom: 15px;">Aggiungi periodi di vacanza o singoli giorni senza lezione per organizzare il tuo piano di studio.</p>
+                <input type="hidden" id="vac-edit-id">
+                <div class="form-group">
+                    <label>Descrizione (es. Vacanze di Natale)</label>
+                    <input type="text" id="vac-desc" placeholder="Nome vacanza...">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Dalla Data</label>
+                        <input type="date" id="vac-start">
+                    </div>
+                    <div class="form-group">
+                        <label>Alla Data (inclusa)</label>
+                        <input type="date" id="vac-end">
+                    </div>
+                </div>
+                <div id="vacations-list-hook" class="margin-top-15" style="max-height: 150px; overflow-y: auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('vacations-modal')">Chiudi</button>
+                <button class="btn-primary teal-btn" id="btn-commit-vacation" onclick="commitVacation()">Aggiungi Periodo</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sharing-upload-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3>Carica Materiale Didattico</h3>
+                <button class="close-btn" onclick="closeModal('sharing-upload-modal')">×</button>
+            </div>
+            <input type="hidden" id="upload-subject-id">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Seleziona File</label>
+                    <input type="file" id="sharing-file-input">
+                </div>
+                <p style="font-size: 11px; color: var(--text-sub); margin-top: 10px;">I file vengono gestiti localmente (salvataggio metadati).</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('sharing-upload-modal')">Annulla</button>
+                <button class="btn-primary" onclick="commitMaterialUpload()">Carica File</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="grade-detail-view-modal" class="modal">
+        <div class="modal-content grade-detail-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <div style="display: flex; flex-direction: column;">
+                    <h3 id="gd-teacher-name" style="margin: 0; font-size: 14px;">Docente</h3>
+                    <span id="gd-date" style="font-size: 11px; color: var(--text-sub); font-weight: 600;">Data</span>
+                </div>
+                <button class="close-btn" onclick="closeModal('grade-detail-view-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="premium-card" style="display: flex; align-items: center; gap: 20px; padding: 25px; margin-bottom: 25px;">
+                    <div id="gd-bubble" class="grade-circle-detail" style="width: 70px; height: 70px; font-size: 24px; box-shadow: 0 8px 15px rgba(0,0,0,0.1);">6</div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <h2 id="gd-subject" style="font-size: 18px; color: var(--argo-blue-text); text-transform: uppercase;">Materia</h2>
+                        <div id="gd-type" style="font-size: 13px; font-weight: 700; color: var(--text-main);">Tipologia: Scritto</div>
+                        <div id="gd-value-text" style="font-size: 12px; color: var(--text-sub);">Valore: 6.00</div>
+                        <div id="gd-weight" style="font-size: 12px; color: var(--text-sub);">Peso: 100%</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <h4 style="font-size: 11px; color: var(--text-sub); text-transform: uppercase; margin-bottom: 8px;">Descrizione / Argomento</h4>
+                    <div class="premium-card" style="background: var(--argo-body-bg); padding: 12px;">
+                        <p id="gd-description-text" style="font-size: 13px; color: var(--text-main);">Nessuna descrizione.</p>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 11px; color: var(--text-sub); text-transform: uppercase; margin-bottom: 8px;">Commento Docente</h4>
+                    <div class="premium-card" style="background: var(--argo-body-bg); border-style: dashed; padding: 12px;">
+                        <p id="gd-comment-text" style="font-size: 13px; line-height: 1.6; color: var(--text-main);">Nessun commento.</p> 
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border: none; padding-top: 0; display: flex; gap: 10px;">
+                <button class="btn-primary" style="background: #25D366; flex: 1; padding: 14px;" onclick="shareGradeOnWhatsApp()">Condividi WhatsApp</button>
+                <button class="btn-cancel" style="flex: 1; padding: 14px;" onclick="closeModal('grade-detail-view-modal')">Chiudi</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <div id="chart-tooltip" class="chart-tooltip"></div>
+
+    <script type="module" src="app.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "didUP Famiglia NextGen",
+  "short_name": "didUP",
+  "description": "Gestione scolastica moderna per studenti e famiglie.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F8F8FA",
+  "theme_color": "#FF914D",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2940/2940654.png?v=2",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2940/2940654.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
